@@ -4,6 +4,7 @@ from config import *
 from yandex_gpt import *
 from validators import *
 from database import *
+from speechkit import *
 
 
 logging.basicConfig(filename=LOGS, level=logging.ERROR, format='%asctime(s) FILE: %(filename)s IN: %(funcName)s '
@@ -31,7 +32,36 @@ def debug(m):
 
 @bot.message_handler(content_types=['voice'])
 def handle_voice(m: telebot.types.Message):
-    pass
+    user_id = m.from_user.id
+    file_id = m.voice.file_id
+    file_info = bot.get_file(file_id)
+    file = bot.download_file(file_info.file_path)
+    try:
+        status_stt, stt_text = speech_to_text(file)
+        if not status_stt:
+            bot.send_message(user_id, stt_text)
+            return
+        last_messages, total_spent_tokens = select_n_last_messages(user_id, COUNT_LAST_MSG)
+        last_messages = [{'text': stt_text, 'role': 'user'}] + last_messages
+        total_gpt_tokens, error_message_2 = is_gpt_token_limit(last_messages, total_spent_tokens)
+        if error_message_2:
+            bot.send_message(user_id, error_message_2)
+            return
+        status_gpt, answer_gpt, tokens_in_answer = ask_gpt(last_messages)
+        if not status_gpt:
+            bot.send_message(user_id, answer_gpt)
+            return
+        total_gpt_tokens += tokens_in_answer
+        full_gpt_message = [answer_gpt, 'assistant', total_gpt_tokens, 0, 0]
+        add_message(user_id=user_id, full_message=full_gpt_message)
+        status_tts, voice_response = text_to_speech(answer_gpt)
+        if not status_tts:
+            bot.send_message(user_id, answer_gpt, reply_to_message_id=m.id)
+        else:
+            bot.send_voice(user_id, voice_response, reply_to_message_id=m.id)
+    except Exception as e:
+        logging.error(e)
+        bot.send_message(user_id, 'Не получилось ответить. Попробуй записать другое сообщение')
 
 
 @bot.message_handler(content_types=['text'])
