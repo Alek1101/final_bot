@@ -1,6 +1,8 @@
 import requests
 import logging
 from config import *
+from creds import get_creds
+IAM_TOKEN, FOLDER_ID = get_creds()
 
 logging.basicConfig(filename=LOGS, level=logging.ERROR, format='%(asctime)s FILE: %(filename)s IN %(funcName)s '
                                                                'MESSAGE: %(message)s', filemode='w')

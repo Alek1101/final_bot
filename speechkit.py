@@ -1,5 +1,7 @@
 import requests
 from config import *
+from creds import get_creds
+IAM_TOKEN, FOLDER_ID = get_creds()
 
 
 def speech_to_text(data):

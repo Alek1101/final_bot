@@ -5,11 +5,12 @@ from yandex_gpt import *
 from validators import *
 from database import *
 from speechkit import *
+from creds import get_bot_token
 
 
 logging.basicConfig(filename=LOGS, level=logging.ERROR, format='%asctime(s) FILE: %(filename)s IN: %(funcName)s '
                                                                'MESSAGE: %(message)s')
-bot = telebot.TeleBot(token)
+bot = telebot.TeleBot(get_bot_token())
 
 
 @bot.message_handler(commands=['start'])
